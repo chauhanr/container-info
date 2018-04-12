@@ -7,6 +7,5 @@ pkg/
 bin/
 src/github.com/*
 .idea/*
-*.exe
 
 #folders
