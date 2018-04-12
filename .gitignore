@@ -1,5 +1,6 @@
 # exe files to avoid
 .exe
+ci
 
 # folders
 pkg/
