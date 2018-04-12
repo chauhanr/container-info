@@ -13,6 +13,7 @@ var (
 	DEBUG bool
 	targetns string
 	targetpid string
+	cgspec string
 )
 
 const(
@@ -37,6 +38,7 @@ func init(){
 	flag.BoolVar(&version, "version", false ,"Lists the version of the tool")
 	flag.StringVar(&targetns, "namespace", "" ,"Lists the details about the namespaces with procided ID")
 	flag.StringVar(&targetpid, "pid", "" ,"Lists the namespaces that the processes with the id belongs to")
+	flag.StringVar(&cgspec, "cgroup", "", "Lists the details of all the cgroups a process belogs to. Format PID:CGROUP_HIERARCHY")
 
 	flag.Usage = func(){
 		fmt.Printf("Usage: %s [args] \n\n",os.Args)
@@ -71,6 +73,8 @@ func main(){
 			namespaces.LookupNS(targetns)
 		case targetpid != "":
 			namespaces.LookupPID(targetpid)
+		case cgspec != "":
+			namespaces.LookupCG(cgspec)
 		default:
 			namespaces.ShowAll()
 	}

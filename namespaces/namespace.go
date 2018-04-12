@@ -10,6 +10,8 @@ import (
 	tw "github.com/olekukonko/tablewriter"
 	"strconv"
 	"sort"
+	"regexp"
+	"errors"
 )
 
 type NSTYPE string
@@ -252,6 +254,72 @@ func ShowAll(){
 	ntable.Render()
 }
 
+
+func LookupCG(cgspec string) {
+	rp := regexp.MustCompile("([0-9])+:([0-9])+")
+	if rp.MatchString(cgspec){
+		pid := strings.Split(cgspec, ":")[0]
+		cg := strings.Split(cgspec,":")[1]
+		debug(fmt.Sprintf("Looking for cgroup %s for process %s", cg, pid))
+		if cm, err := usage(pid, cg); err ==nil{
+			ptable := tw.NewWriter(os.Stdout)
+			ptable.SetHeader([]string{"CONTROLFILE", "VALUE"})
+			ptable.SetColumnSeparator("")
+			ptable.SetCenterSeparator("")
+			ptable.SetRowSeparator("")
+			ptable.SetHeaderAlignment(tw.ALIGN_LEFT)
+			ptable.SetAlignment(tw.ALIGN_LEFT)
+
+			for cf, v := range cm{
+				row := []string{cf, v}
+				ptable.Append(row)
+			}
+			ptable.Render()
+		}else{
+			fmt.Println(err)
+		}
+	}else {
+		fmt.Println("Provided argument is not in expected format. It should be PID:CGROUP_HIERARCHY")
+		fmt.Println("For example: 1000:2 lists details of cgroup with hierarchy ID 2 the process with PID 1000 belongs to.")
+	}
+}
+
+func usage(pid, cg string) (map[string]string, error){
+	base := "/sys/fs/cgroup"
+	p := lprocess(pid)
+	cgroups := p.Cgroups
+	lines := strings.Split(cgroups,"\n")
+	for _, l := range lines{
+		chierarchy := strings.Split(l, ":")[0]
+		cname := strings.Split(l, ":")[1]
+		cpath :=  strings.Split(l, ":")[2]
+		if cg == chierarchy{
+			cdir := filepath.Join(base, cname, cpath)
+			cfiles, _ := ioutil.ReadDir(cdir)
+			cmap := make(map[string]string)
+			for _, f := range cfiles {
+				cfname := filepath.Join(cdir, f.Name())
+				if cvalue, err := ioutil.ReadFile(cfname); err ==nil{
+					cmap[f.Name()] = string(cvalue)
+				}
+			}
+			return cmap, nil
+		}
+	}
+	return nil, errors.New(fmt.Sprintf("No control files found for cgroup %s of process %s", cg, pid))
+}
+
+func lprocess(pid string) *Process{
+	for _, ns := range processes[pid]{
+		for _, p := range namespaces[ns]{
+			debug("checking process "+ p.Pid)
+			if pid == p.Pid{
+				return &p
+			}
+		}
+	}
+	return nil
+}
 
 func contains(s int, slist []int) bool {
 	for _, b := range slist {
