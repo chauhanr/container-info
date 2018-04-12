@@ -1,0 +1,11 @@
+# exe files to avoid
+.exe
+
+# folders
+pkg/
+bin/
+src/github.com/*
+.idea/*
+*.exe
+
+#folders
