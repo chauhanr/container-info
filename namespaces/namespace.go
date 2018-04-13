@@ -14,6 +14,8 @@ import (
 	"regexp"
 	"errors"
 	"time"
+	"bytes"
+	"encoding/json"
 )
 
 type NSTYPE string
@@ -368,6 +370,29 @@ func MonitorPID(monspec string) {
 		}
 	}else{
 
+	}
+}
+
+func DoMetrices(logspec string){
+	rp := regexp.MustCompile("[:ascii:]*:([0-9])+")
+	if rp.MatchString(logspec){
+		od := strings.Split(logspec, ":")[0]
+		interval, _ := strconv.Atoi(strings.Split(logspec,":")[1])
+		var out bytes.Buffer
+		for {
+			fmt.Println("output to ", od)
+			for _, pl := range namespaces {
+				for _, p := range pl {
+					ep, _ := json.Marshal(p)
+					json.Indent(&out, ep, "", "\t")
+					out.WriteTo(os.Stdout)
+				}
+			}
+			time.Sleep(time.Duration(interval)*time.Millisecond)
+		}
+	}else{
+		fmt.Println("Provided argument is not in expected format. It should be OUTPUT_DEF:INTERVAL")
+		fmt.Println("For example: RAW:1000 will output all namespace and cgroups metrics to stdout, every second.")
 	}
 }
 
