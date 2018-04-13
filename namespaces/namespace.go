@@ -8,10 +8,12 @@ import (
 	"strings"
 	"io/ioutil"
 	tw "github.com/olekukonko/tablewriter"
+	tm "github.com/buger/goterm"
 	"strconv"
 	"sort"
 	"regexp"
 	"errors"
+	"time"
 )
 
 type NSTYPE string
@@ -319,6 +321,54 @@ func lprocess(pid string) *Process{
 		}
 	}
 	return nil
+}
+
+/*
+	This function will try and monitor the pid against the metric you provide
+	input for monspec -  PID:memory.usage_in_bytes,memory.max_usage_in_bytes
+*/
+func MonitorPID(monspec string) {
+	rp := regexp.MustCompile("([0-9])+:*")
+	if rp.MatchString(monspec){
+		pid := strings.Split(monspec,":")[0]
+		colspec := strings.Split(monspec, ":")[1]
+		columns := strings.Split(colspec, ",")
+
+		debug(fmt.Sprintf("Pid is %s Columns : %s\n",pid, columns))
+		p, _ := status(pid)
+		debug(fmt.Sprintf("Monitoring process %s with column spec %s", pid, colspec))
+		tm.Clear()
+		for {
+			tm.MoveCursor(1, 1)
+			nsl := processes[pid]
+			tm.Printf("ci ")
+			tm.Printf(tm.Background(tm.Color(fmt.Sprintf("PID [%s] PPID [%s] CMD [%s]\n", p.Pid, p.PPid, p.Command), tm.BLACK), tm.WHITE))
+			//tm.MoveCursor(2, 1)
+			tm.Printf("UIDS [%s] STATE[%s]\n", p.Uids, p.State)
+			//tm.MoveCursor(3, 1)
+			tm.Printf("NAMESPACES [%s]\n", nsl)
+			//tm.MoveCursor(5, 1)
+
+			cftable := tm.NewTable(5, 10, 5, ' ', 0)
+			fmt.Fprintf(cftable, "CONTROLFILE\tVALUE\n")
+			for _, c := range columns {
+				cgname := strings.Split(string(c), ".")[0]
+				cgid := availablecgs[cgname]
+				if cm, err := usage(pid, cgid); err == nil {
+					for cf, v := range cm {
+						if cf == c {
+							fmt.Fprintf(cftable, "%s\t%s\n", cf, strings.Replace(v, "\n", " ", -1))
+						}
+					}
+				}
+			}
+			tm.Println(cftable)
+			tm.Flush()
+			time.Sleep(time.Second)
+		}
+	}else{
+
+	}
 }
 
 func contains(s int, slist []int) bool {

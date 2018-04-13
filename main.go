@@ -14,6 +14,7 @@ var (
 	targetns string
 	targetpid string
 	cgspec string
+	monspec string
 )
 
 const(
@@ -39,6 +40,7 @@ func init(){
 	flag.StringVar(&targetns, "namespace", "" ,"Lists the details about the namespaces with procided ID")
 	flag.StringVar(&targetpid, "pid", "" ,"Lists the namespaces that the processes with the id belongs to")
 	flag.StringVar(&cgspec, "cgroup", "", "Lists the details of all the cgroups a process belogs to. Format PID:CGROUP_HIERARCHY")
+	flag.StringVar(&monspec, "monitor", "", "Monitor process with provided control. Format PID:CF1, CF2...")
 
 	flag.Usage = func(){
 		fmt.Printf("Usage: %s [args] \n\n",os.Args)
@@ -75,6 +77,8 @@ func main(){
 			namespaces.LookupPID(targetpid)
 		case cgspec != "":
 			namespaces.LookupCG(cgspec)
+		case monspec != "":
+			namespaces.MonitorPID(monspec)
 		default:
 			namespaces.ShowAll()
 	}
