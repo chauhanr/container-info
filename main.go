@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"os"
 	"strconv"
-	"container-info/namespaces"
+	"github.com/container-info/namespaces"
 )
 
 var (
